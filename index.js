@@ -21,7 +21,16 @@ const TOKEN = process.env.DISCORD_TOKEN;
 // --- CONFIGURATIE ---
 const COUNT_CHANNEL_ID = '1517242275602759790';
 const WELCOME_CHANNEL_ID = '1517153163302404200';
-const LEVEL_CHANNEL_ID = '1517153163302404201'; // <-- Pas dit ID aan voor je levels kanaal
+const LEVEL_CHANNEL_ID = '1517153163302404201'; // Pas dit ID aan voor je levels kanaal
+
+// Jouw exacte categorieën zijn hier weer gekoppeld
+const TICKET_CATEGORIES = {
+    ticket_soli: "1526298535010766889", // werken bij de efteling
+    ticket_mc: "1526298606112477504",   // atractie hulp
+    ticket_ban: "1526298683409436722",  // ban epeal
+    ticket_dc: "1526249047818506250",   // discord vragen
+    ticket_web: "1526250027897454682"   // park info
+};
 
 // --- DATA OPSLAG ---
 let currentCount = 0;
@@ -35,7 +44,10 @@ const eftelingQuestions = [
     { q: "Hoe heet de bekende vuurspuwende draak bij de Joris en de Draak?", a: "draak lloyd" },
     { q: "Welke attractie heeft de bekende bewoner 'Lange Jan'?", a: "sprookjesbos" },
     { q: "Hoe heet de achtbaan die in het donker rijdt en een vogel als thema heeft?", a: "vogel rok" },
-    { q: "Wat roept Holle Bolle Gijs altijd?", a: "papier hier" }
+    { q: "Wat roept Holle Bolle Gijs altijd?", a: "papier hier" },
+    { q: "Hoe heet de houten achtbaan waarin je strijdt tegen water of vuur?", a: "joris en de draak" },
+    { q: "Wat is de naam van de dive coaster die 37,5 meter loodrecht naar beneden valt?", a: "baron 1898" },
+    { q: "In welke attractie maak je een boottocht door een oosterse wereld uit 1001 nacht?", a: "fata morgana" }
 ];
 
 // --- VLAG RADEN DATA ---
@@ -43,7 +55,15 @@ const flagGames = [
     { flag: "🇳🇱", name: "nederland" },
     { flag: "🇧🇪", name: "belgie" },
     { flag: "🇩🇪", name: "duitsland" },
-    { flag: "🇫🇷", name: "frankrijk" }
+    { flag: "🇫🇷", name: "frankrijk" },
+    { flag: "🇮🇹", name: "italie" },
+    { flag: "🇪🇸", name: "spanje" },
+    { flag: "🇯🇵", name: "japan" },
+    { flag: "🇨🇦", name: "canada" },
+    { flag: "🇧🇷", name: "brazilie" },
+    { flag: "🇺🇸", name: "amerika" },
+    { flag: "🇲🇦", name: "marokko" },
+    { flag: "🇹🇷", name: "turkije" }
 ];
 
 function startNewFlagGame(channel) {
@@ -59,7 +79,7 @@ function startNewEftelingGame(channel) {
 }
 
 client.once('ready', () => {
-    console.log(`🤖 Ingelogd als ${client.user.tag}!`);
+    console.log(`🤖 Ingelogd als ${client.user.tag}! Categorieën zijn gekoppeld.`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -149,7 +169,7 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// --- TICKETS VERWERKEN ---
+// --- TICKETS VERWERKEN PER CATEGORIE ---
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
 
@@ -166,9 +186,11 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.customId === 'ticket_web') { ticketType = 'Website Hulp'; prefix = 'web'; }
 
         try {
+            // De 'parent' eigenschap is nu correct teruggezet
             const ticketChannel = await interaction.guild.channels.create({
                 name: `🎫-${prefix}-${interaction.user.username}`,
                 type: ChannelType.GuildText,
+                parent: TICKET_CATEGORIES[interaction.customId], // Sorteert in de juiste map
                 permissionOverwrites: [
                     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
                     { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }
@@ -188,17 +210,11 @@ client.on('interactionCreate', async (interaction) => {
             await interaction.editReply({ content: `✅ Je ticket is aangemaakt! Ga naar ${ticketChannel}` });
         } catch (error) {
             console.error(error);
-            await interaction.editReply({ content: `❌ Er ging iets mis bij het aanmaken van het kanaal.` });
+            await interaction.editReply({ content: `❌ Er ging iets mis bij het aanmaken onder de categorie. Controleer de ID's.` });
         }
     }
 
     if (interaction.customId === 'close_ticket') {
         await interaction.reply({ content: "🔒 Dit ticket wordt over 5 seconden gesloten..." });
         setTimeout(async () => {
-            try { await interaction.channel.delete(); } catch (e) { console.error(e); }
-        }, 5000);
-    }
-});
-
-client.login(TOKEN);
 
