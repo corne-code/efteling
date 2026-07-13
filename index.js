@@ -19,17 +19,17 @@ const client = new Client({
 const TOKEN = process.env.DISCORD_TOKEN;
 
 // --- CONFIGURATIE ---
-const COUNT_CHANNEL_ID = '1517242275602759790'; // Pas dit ID aan voor je telkanaal
+const COUNT_CHANNEL_ID = '1517242275602759790'; 
 const WELCOME_CHANNEL_ID = '1517153163302404200';
-const LEVEL_CHANNEL_ID = '1517153163302404201'; // Pas dit ID aan voor je levels kanaal
+const LEVEL_CHANNEL_ID = '1517153163302404201'; 
 
 // Jouw exacte categorieën
 const TICKET_CATEGORIES = {
-    ticket_soli: "1526298535010766889", // werken bij de efteling
-    ticket_mc: "1526298606112477504",   // atractie hulp
-    ticket_ban: "1526298683409436722",  // ban epeal
-    ticket_dc: "1526249047818506250",   // discord vragen
-    ticket_web: "1526250027897454682"   // park info
+    ticket_soli: "1526298535010766889", 
+    ticket_mc: "1526298606112477504",   
+    ticket_ban: "1526298683409436722",  
+    ticket_dc: "1526249047818506250",   
+    ticket_web: "1526250027897454682"   
 };
 
 // --- DATA OPSLAG ---
@@ -50,9 +50,8 @@ const eftelingQuestions = [
     { q: "In welke attractie maak je een boottocht door een oosterse wereld uit 1001 nacht?", a: "fata morgana" }
 ];
 
-// --- VLAG RADEN DATA (100% Gecorrigeerd en veilig!) ---
+// --- VLAG RADEN DATA ---
 const flagGames = [
-    // Makkelijk
     { flag: "🇳🇱", name: "nederland" },
     { flag: "🇧🇪", name: "belgie" },
     { flag: "🇩🇪", name: "duitsland" },
@@ -61,7 +60,6 @@ const flagGames = [
     { flag: "🇺🇸", name: "amerika" },
     { flag: "🇮🇹", name: "italie" },
     { flag: "🇪🇸", name: "spanje" },
-    // Gemiddeld
     { flag: "🇯🇵", name: "japan" },
     { flag: "🇨🇦", name: "canada" },
     { flag: "🇧🇷", name: "brazilie" },
@@ -78,7 +76,6 @@ const flagGames = [
     { flag: "🇨🇭", name: "zwitserland" },
     { flag: "🇸🇪", name: "zweden" },
     { flag: "🇨🇳", name: "china" },
-    // Moeilijk
     { flag: "🇰🇷", name: "zuid-korea" },
     { flag: "🇮🇸", name: "ijsland" },
     { flag: "🇳🇿", name: "nieuw-zeeland" },
@@ -87,7 +84,6 @@ const flagGames = [
     { flag: "🇯🇲", name: "jamaica" },
     { flag: "🇰🇪", name: "kenia" },
     { flag: "🇵🇪", name: "peru" },
-    // Extreem moeilijk
     { flag: "🇳🇵", name: "nepal" },
     { flag: "🇧🇹", name: "bhutan" },
     { flag: "🇱🇰", name: "sri lanka" },
@@ -229,3 +225,7 @@ client.on('interactionCreate', async (interaction) => {
             });
 
             const embed = new EmbedBuilder()
+                .setTitle(`🏰 ${ticketType} - ${interaction.user.username}`)
+                .setDescription(`Bedankt voor je bericht. Leg je vraag zo duidelijk mogelijk uit.\n\nKlik op de knop om te sluiten.`)
+                .setColor(0x2E1F14);
+
