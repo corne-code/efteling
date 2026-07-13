@@ -19,7 +19,7 @@ const client = new Client({
 const TOKEN = process.env.DISCORD_TOKEN;
 
 // --- CONFIGURATIE ---
-const COUNT_CHANNEL_ID = '1517242275602759790'; // <-- HIER ZET JE HET TELKANAAL ID NEER
+const COUNT_CHANNEL_ID = '1517242275602759790'; // Pas dit ID aan voor je telkanaal
 const WELCOME_CHANNEL_ID = '1517153163302404200';
 const LEVEL_CHANNEL_ID = '1517153163302404201'; // Pas dit ID aan voor je levels kanaal
 
@@ -50,9 +50,9 @@ const eftelingQuestions = [
     { q: "In welke attractie maak je een boottocht door een oosterse wereld uit 1001 nacht?", a: "fata morgana" }
 ];
 
-// --- VLAG RADEN DATA (Uitgebreid met veel leukere en moeilijkere landen!) ---
+// --- VLAG RADEN DATA (100% Gecorrigeerd en veilig!) ---
 const flagGames = [
-    // Makkelijk / Leuk
+    // Makkelijk
     { flag: "🇳🇱", name: "nederland" },
     { flag: "🇧🇪", name: "belgie" },
     { flag: "🇩🇪", name: "duitsland" },
@@ -78,7 +78,7 @@ const flagGames = [
     { flag: "🇨🇭", name: "zwitserland" },
     { flag: "🇸🇪", name: "zweden" },
     { flag: "🇨🇳", name: "china" },
-    // Moeilijk / Uitdagend
+    // Moeilijk
     { flag: "🇰🇷", name: "zuid-korea" },
     { flag: "🇮🇸", name: "ijsland" },
     { flag: "🇳🇿", name: "nieuw-zeeland" },
@@ -87,15 +87,15 @@ const flagGames = [
     { flag: "🇯🇲", name: "jamaica" },
     { flag: "🇰🇪", name: "kenia" },
     { flag: "🇵🇪", name: "peru" },
-    // Extreem moeilijk (Voor de experts!)
+    // Extreem moeilijk
     { flag: "🇳🇵", name: "nepal" },
     { flag: "🇧🇹", name: "bhutan" },
-    { flag: "🇱 اجرا", name: "sri lanka" },
+    { flag: "🇱🇰", name: "sri lanka" },
     { flag: "🇰🇬", name: "kirgizie" },
     { flag: "🇲🇬", name: "madagaskar" },
     { flag: "🇵🇬", name: "papoea-nieuw-guinea" },
     { flag: "🇻🇦", name: "vaticaanstad" },
-    { flag: "🇸🇪", name: "kazachstan" }
+    { flag: "🇰🇿", name: "kazachstan" }
 ];
 
 function startNewFlagGame(channel) {
@@ -111,7 +111,7 @@ function startNewEftelingGame(channel) {
 }
 
 client.once('ready', () => {
-    console.log(`🤖 Ingelogd als ${client.user.tag}! Bot is volledig operationeel.`);
+    console.log(`🤖 Ingelogd als ${client.user.tag}! Bot is online.`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -224,3 +224,8 @@ client.on('interactionCreate', async (interaction) => {
                 parent: TICKET_CATEGORIES[interaction.customId],
                 permissionOverwrites: [
                     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                    { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }
+                ]
+            });
+
+            const embed = new EmbedBuilder()
