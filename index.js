@@ -42,7 +42,7 @@ const activeGames = {};
 const eftelingQuestions = [
     { q: "In welk jaar opende de Efteling haar deuren?", a: "1952" },
     { q: "Hoe heet de bekende vuurspuwende draak bij de Joris en de Draak?", a: "draak lloyd" },
-    { q: "Welke attractie heeft de bekende bewoner 'Lange Jan'?", a: "sprookjesbos" },
+    { q: "Welke attractie heeft de bekende bewoner 'Lang nek'?", a: "sprookjesbos" },
     { q: "Hoe heet de achtbaan die in het donker rijdt en een vogel als thema heeft?", a: "vogel rok" },
     { q: "Wat roept Holle Bolle Gijs altijd?", a: "papier hier" },
     { q: "Hoe heet de houten achtbaan waarin je strijdt tegen water of vuur?", a: "joris en de draak" },
