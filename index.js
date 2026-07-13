@@ -18,13 +18,10 @@ const client = new Client({
 
 const TOKEN = process.env.DISCORD_TOKEN;
 
-// --- CONFIGURATIE (KANALEN VAN JOUW VRIEND) ---
-const COUNT_CHANNEL_ID = '1525991728396505129';       // Tellen
-const VRAGEN_CHANNEL_ID = '1525991824139878570';      // Random vragen
-const VLAGGEN_CHANNEL_ID = '1525991882218274967';     // Vlaggen raden
-const LEVELS_CHANNEL_ID = '1525991988283834559';      // Levels status
-
-const WELCOME_CHANNEL_ID = '1517153163302404200';     // TIP: Pas deze nog aan naar zijn welkomstkanaal!
+// --- CONFIGURATIE (Pas deze ID's aan in Discord) ---
+const COUNT_CHANNEL_ID = '1517242275602759790';
+const WELCOME_CHANNEL_ID = '1517153163302404200';
+const LEVEL_CHANNEL_ID = '1517153163302404201'; // <-- PAS DIT ID AAN VOOR JE LEVELS KANAAL
 
 const TICKET_CATEGORIES = {
     ticket_soli: "1525019961171509409",
@@ -37,8 +34,8 @@ const TICKET_CATEGORIES = {
 // --- DATA OPSLAG (In-memory) ---
 let currentCount = 0;
 let lastCounterId = null;
-const userLevels = {}; 
-const activeGames = {}; 
+const userLevels = {}; // Slaat XP en Levels op: { userId: { xp: 0, level: 1 } }
+const activeGames = {}; // Slaat lopende spelletjes per kanaal op
 
 // --- EFTELING VRAGEN DATA ---
 const eftelingQuestions = [
@@ -58,12 +55,54 @@ const flagGames = [
     { flag: "🇬🇧", name: "engeland" }
 ];
 
+// --- HULPFUNCTIES VOOR MINI-GAMES ---
+function startNewFlagGame(channel) {
+    const game = flagGames[Math.floor(Math.random() * flagGames.length)];
+    activeGames[channel.id] = { type: 'vlag', answer: game.name };
+    channel.send(`🗺️ **Volgende vlag!** Welk land hoort bij deze vlag: ${game.flag}?`);
+}
+
+function startNewEftelingGame(channel) {
+    const game = eftelingQuestions[Math.floor(Math.random() * eftelingQuestions.length)];
+    activeGames[channel.id] = { type: 'vraag', answer: game.a };
+    channel.send(`🏰 **Volgende Efteling vraag!** ${game.q}`);
+}
+
+// --- EVENT: BOT READY ---
+client.once('ready', () => {
+    console.log(`🤖 Ingelogd als ${client.user.tag}! Efteling Bot is klaar voor gebruik.`);
+});
+
 // --- EVENT: MESSAGE CREATE ---
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // --- LEVEL SYSTEEM (XP PER BERICHT) ---
     const userId = message.author.id;
+
+    // --- TELSYS ---
+    if (message.channel.id === COUNT_CHANNEL_ID) {
+        const number = parseInt(message.content);
+        if (isNaN(number)) return message.delete().catch(console.error);
+
+        if (number !== currentCount + 1) {
+            const correctTarget = currentCount + 1;
+            currentCount = 0;
+            lastCounterId = null;
+            return message.reply(`❌ Fout! Het juiste getal moest ${correctTarget} zijn. We beginnen weer bij 1!`);
+        }
+
+        if (userId === lastCounterId) {
+            currentCount = 0;
+            lastCounterId = null;
+            return message.reply("❌ Je mag niet twee keer achter elkaar tellen! We beginnen weer bij 1!");
+        }
+
+        currentCount = number;
+        lastCounterId = userId;
+        return message.react('✅').catch(console.error);
+    }
+
+    // --- LEVEL SYSTEEM (XP PER BERICHT) ---
     if (!userLevels[userId]) userLevels[userId] = { xp: 0, level: 1 };
     
     userLevels[userId].xp += Math.floor(Math.random() * 10) + 5; 
@@ -72,74 +111,70 @@ client.on('messageCreate', async (message) => {
     if (userLevels[userId].xp >= xpNeeded) {
         userLevels[userId].level += 1;
         userLevels[userId].xp = 0;
-        // Stuurt de level-up melding netjes in het levels kanaal
-        const lvlChannel = message.guild.channels.cache.get(LEVELS_CHANNEL_ID);
-        if (lvlChannel) {
-            lvlChannel.send(`🎉 **Level Up!** <@${userId}> is nu level **${userLevels[userId].level}**!`);
+        
+        // Stuur bericht naar de chat waar de gebruiker praat
+        message.reply(`🎉 **Level Up!** Je bent nu level **${userLevels[userId].level}**!`);
+        
+        // Stuur direct een melding naar het speciale levels-kanaal
+        const levelChannel = message.guild.channels.cache.get(LEVEL_CHANNEL_ID);
+        if (levelChannel) {
+            const levelEmbed = new EmbedBuilder()
+                .setTitle("🌟 Efteling Status Omhoog!")
+                .setDescription(`🏆 Gijs wenst <@${userId}> gefeliciteerd!\nGebruiker is gestegen naar **Level ${userLevels[userId].level}**!`)
+                .setColor(0x2E1F14)
+                .setTimestamp();
+            levelChannel.send({ embeds: [levelEmbed] }).catch(console.error);
         }
     }
 
     // --- LEVEL COMMANDO ---
     if (message.content === '!level') {
-        if (message.channel.id !== LEVELS_CHANNEL_ID) {
-            return message.reply(`❌ Dit commando werkt alleen in <#${LEVELS_CHANNEL_ID}>!`).then(msg => setTimeout(() => msg.delete(), 5000));
-        }
         const levelData = userLevels[userId];
         return message.reply(`🌟 **Je Efteling Status:**\n• Level: ${levelData.level}\n• XP: ${levelData.xp}/${levelData.level * 100}`);
     }
 
-    // --- TELSYS ---
-    if (message.channel.id === COUNT_CHANNEL_ID) {
-        const number = parseInt(message.content);
-        if (isNaN(number)) return message.delete().catch(console.error);
-
-        if (number !== currentCount + 1) {
-            currentCount = 0;
-            lastCounterId = null;
-            return message.reply(`❌ Fout! Het juiste getal was ${currentCount + 1}. We beginnen weer bij 1!`);
-        }
-
-        if (message.author.id === lastCounterId) {
-            currentCount = 0;
-            lastCounterId = null;
-            return message.reply("❌ Je mag niet twee keer achter elkaar tellen!");
-        }
-
-        currentCount = number;
-        lastCounterId = message.author.id;
-        return message.react('✅');
-    }
-
-    // --- MINI-GAME: VLAG RADEN ---
+    // --- MINI-GAMES COMMANDO'S ---
     if (message.content === '!vlag') {
-        if (message.channel.id !== VLAGGEN_CHANNEL_ID) {
-            return message.reply(`❌ Dit spel kan alleen gestart worden in <#${VLAGGEN_CHANNEL_ID}>!`).then(msg => setTimeout(() => msg.delete(), 5000));
-        }
-        if (activeGames[message.channel.id]) return message.reply("Er is al een spel bezig in dit kanaal!");
+        if (activeGames[message.channel.id]) return message.reply("Er is al een spel bezig in dit kanaal! Typ `!stop` om het te beëindigen.");
         
         const game = flagGames[Math.floor(Math.random() * flagGames.length)];
         activeGames[message.channel.id] = { type: 'vlag', answer: game.name };
-        return message.reply(`🗺️ **Vlag Raden!** Welk land hoort bij deze vlag: ${game.flag}?`);
+        return message.reply(`🗺️ **Vlag Raden Gestart!** Welk land hoort bij deze vlag: ${game.flag}? (Typ \`!stop\` om te stoppen)`);
     }
 
-    // --- MINI-GAME: EFTELING VRAAG ---
     if (message.content === '!eftelingvraag') {
-        if (message.channel.id !== VRAGEN_CHANNEL_ID) {
-            return message.reply(`❌ Dit spel kan alleen gestart worden in <#${VRAGEN_CHANNEL_ID}>!`).then(msg => setTimeout(() => msg.delete(), 5000));
-        }
-        if (activeGames[message.channel.id]) return message.reply("Er is al een spel bezig in dit kanaal!");
+        if (activeGames[message.channel.id]) return message.reply("Er is al een spel bezig in dit kanaal! Typ `!stop` om het te beëindigen.");
         
         const game = eftelingQuestions[Math.floor(Math.random() * eftelingQuestions.length)];
         activeGames[message.channel.id] = { type: 'vraag', answer: game.a };
-        return message.reply(`🏰 **Efteling Quiz!** ${game.q}`);
+        return message.reply(`🏰 **Efteling Quiz Gestart!** ${game.q} (Typ \`!stop\` om te stoppen)`);
     }
 
-    // Antwoorden controleren voor actieve games (werkt alleen in de juiste kanalen)
+    // Handmatig een spel stoppen
+    if (message.content === '!stop') {
+        if (activeGames[message.channel.id]) {
+            delete activeGames[message.channel.id];
+            return message.reply("🛑 Het spel is stopgezet!");
+        }
+    }
+
+    // Antwoorden controleren & direct een nieuwe vraag starten
     const channelGame = activeGames[message.channel.id];
     if (channelGame) {
         if (message.content.toLowerCase() === channelGame.answer.toLowerCase()) {
-            delete activeGames[message.channel.id];
-            return message.reply(`🏆 Goed geraden <@${message.author.id}>! Het antwoord was inderdaad **${channelGame.answer}**.`);
+            const gameType = channelGame.type;
+            
+            await message.reply(`🏆 Goed geraden <@${userId}>! Het antwoord was inderdaad **${channelGame.answer}**.`);
+            
+            // Wacht 2 seconden en start direct de volgende ronde
+            setTimeout(() => {
+                if (gameType === 'vlag') {
+                    startNewFlagGame(message.channel);
+                } else if (gameType === 'vraag') {
+                    startNewEftelingGame(message.channel);
+                }
+            }, 2000);
+            return;
         }
     }
 
@@ -162,7 +197,7 @@ client.on('messageCreate', async (message) => {
         );
 
         await message.channel.send({ embeds: [embed], components: [row1, row2] });
-        message.delete();
+        message.delete().catch(console.error);
     }
 });
 
@@ -182,44 +217,14 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.customId === 'ticket_dc') { ticketType = 'Discord Hulp'; prefix = 'dc'; }
         if (interaction.customId === 'ticket_web') { ticketType = 'Website Hulp'; prefix = 'web'; }
 
-        const ticketChannel = await interaction.guild.channels.create({
-            name: `${prefix}-${interaction.user.username}`,
-            type: ChannelType.GuildText,
-            parent: TICKET_CATEGORIES[interaction.customId],
-            permissionOverwrites: [
-                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
-            ]
-        });
+        try {
+            const ticketChannel = await interaction.guild.channels.create({
+                name: `${prefix}-${interaction.user.username}`,
+                type: ChannelType.GuildText,
+                parent: TICKET_CATEGORIES[interaction.customId],
+                permissionOverwrites: [
+                    { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                    { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }
+                ]
+            });
 
-        const embed = new EmbedBuilder()
-            .setTitle(`🏰 ${ticketType} - ${interaction.user.username}`)
-            .setDescription(`Bedankt voor je bericht aan de **Efteling**. Leg je vraag zo duidelijk mogelijk uit.\n\nKlik op de rode knop om dit ticket te sluiten.`)
-            .setColor(0x2E1F14);
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('close_ticket').setLabel('Sluit Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒')
-        );
-
-        await ticketChannel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] });
-        await interaction.editReply({ content: `Je ticket is aangemaakt: ${ticketChannel}`, ephemeral: true });
-    }
-
-    if (interaction.customId === 'close_ticket') {
-        await interaction.reply("Dit ticket wordt over 5 seconden gesloten...");
-        setTimeout(() => {
-            interaction.channel.delete().catch(console.error);
-        }, 5000);
-    }
-});
-
-// --- WELKOMSTCODE ---
-client.on('guildMemberAdd', async (member) => {
-    const channel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
-    if (!channel) return;
-
-    const embed = new EmbedBuilder()
-        .setColor("#2E1F14")
-        .setTitle("🕯️ Een nieuw avontuur begins in de Efteling...")
-        .setDescription(
-            `Welkom ${member}.\n\n` +
