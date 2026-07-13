@@ -18,24 +18,25 @@ const client = new Client({
 
 const TOKEN = process.env.DISCORD_TOKEN;
 
-// --- CONFIGURATIE (Pas deze ID's aan in Discord) ---
+// --- CONFIGURATIE ---
 const COUNT_CHANNEL_ID = '1517242275602759790';
 const WELCOME_CHANNEL_ID = '1517153163302404200';
 const LEVEL_CHANNEL_ID = '1517153163302404201'; // <-- PAS DIT ID AAN VOOR JE LEVELS KANAAL
 
+// Jouw exacte categorie-ID's zijn nu hier gekoppeld!
 const TICKET_CATEGORIES = {
-    ticket_soli: "1525019961171509409",
-    ticket_mc: "1525019522921267251",
-    ticket_ban: "1525225726490706021",
-    ticket_dc: "1525225822204723210",
-    ticket_web: "1525225910540964000"
+    ticket_soli: "1526298535010766889", // werken bij de efteling
+    ticket_mc: "1526298606112477504",   // atractie hulp
+    ticket_ban: "1526298683409436722",  // ban epeal
+    ticket_dc: "1526249047818506250",   // discord vragen
+    ticket_web: "1526250027897454682"   // park info
 };
 
 // --- DATA OPSLAG (In-memory) ---
 let currentCount = 0;
 let lastCounterId = null;
-const userLevels = {}; // Slaat XP en Levels op: { userId: { xp: 0, level: 1 } }
-const activeGames = {}; // Slaat lopende spelletjes per kanaal op
+const userLevels = {}; 
+const activeGames = {}; 
 
 // --- EFTELING VRAGEN DATA ---
 const eftelingQuestions = [
@@ -43,34 +44,57 @@ const eftelingQuestions = [
     { q: "Hoe heet de bekende vuurspuwende draak bij de Joris en de Draak?", a: "draak lloyd" },
     { q: "Welke attractie heeft de bekende bewoner 'Lange Jan'?", a: "sprookjesbos" },
     { q: "Hoe heet de achtbaan die in het donker rijdt en een vogel als thema heeft?", a: "vogel rok" },
-    { q: "Wat roept Holle Bolle Gijs altijd?", a: "papier hier" }
+    { q: "Wat roept Holle Bolle Gijs altijd?", a: "papier hier" },
+    { q: "Hoe heet de houten achtbaan waarin je strijdt tegen water of vuur?", a: "joris en de draak" },
+    { q: "Wat is de naam van de dive coaster die 37,5 meter loodrecht naar beneden valt?", a: "baron 1898" },
+    { q: "In welke attractie maak je een boottocht door een oosterse wereld uit 1001 nacht?", a: "fata morgana" }
 ];
 
-// --- VLAG RADEN DATA ---
+// --- VLAG RADEN DATA (Uitgebreid met moeilijkere landen!) ---
 const flagGames = [
     { flag: "🇳🇱", name: "nederland" },
     { flag: "🇧🇪", name: "belgie" },
     { flag: "🇩🇪", name: "duitsland" },
     { flag: "🇫🇷", name: "frankrijk" },
-    { flag: "🇬🇧", name: "engeland" }
+    { flag: "🇬🇧", name: "engeland" },
+    { flag: "🇮🇹", name: "italie" },
+    { flag: "🇪🇸", name: "spanje" },
+    { flag: "🇯🇵", name: "japan" },
+    { flag: "🇨🇦", name: "canada" },
+    { flag: "🇧🇷", name: "brazilie" },
+    { flag: "🇺🇸", name: "amerika" },
+    { flag: "🇲🇦", name: "marokko" },
+    { flag: "🇹🇷", name: "turkije" },
+    { flag: "🇦🇺", name: "australie" },
+    { flag: "🇲🇽", name: "mexico" },
+    { flag: "🇦🇷", name: "argentinie" },
+    { flag: "🇪🇬", name: "egypte" },
+    { flag: "🇿🇦", name: "zuid-afrika" },
+    { flag: "🇬🇷", name: "griekenland" },
+    { flag: "🇮🇳", name: "india" }
 ];
 
-// --- HULPFUNCTIES VOOR MINI-GAMES ---
+// --- HULPFUNCTIES VOOR AUTOMATISCHE GAMES ---
 function startNewFlagGame(channel) {
+    // Controleer of de game tussentijds niet is gestopt via !stop
+    if (!activeGames[channel.id] || activeGames[channel.id].type !== 'vlag') return;
+    
     const game = flagGames[Math.floor(Math.random() * flagGames.length)];
-    activeGames[channel.id] = { type: 'vlag', answer: game.name };
+    activeGames[channel.id].answer = game.name;
     channel.send(`🗺️ **Volgende vlag!** Welk land hoort bij deze vlag: ${game.flag}?`);
 }
 
 function startNewEftelingGame(channel) {
+    if (!activeGames[channel.id] || activeGames[channel.id].type !== 'vraag') return;
+    
     const game = eftelingQuestions[Math.floor(Math.random() * eftelingQuestions.length)];
-    activeGames[channel.id] = { type: 'vraag', answer: game.a };
+    activeGames[channel.id].answer = game.a;
     channel.send(`🏰 **Volgende Efteling vraag!** ${game.q}`);
 }
 
 // --- EVENT: BOT READY ---
 client.once('ready', () => {
-    console.log(`🤖 Ingelogd als ${client.user.tag}! Efteling Bot is klaar voor gebruik.`);
+    console.log(`🤖 Ingelogd als ${client.user.tag}! Tickets en games zijn nu actief.`);
 });
 
 // --- EVENT: MESSAGE CREATE ---
@@ -112,10 +136,8 @@ client.on('messageCreate', async (message) => {
         userLevels[userId].level += 1;
         userLevels[userId].xp = 0;
         
-        // Stuur bericht naar de chat waar de gebruiker praat
         message.reply(`🎉 **Level Up!** Je bent nu level **${userLevels[userId].level}**!`);
         
-        // Stuur direct een melding naar het speciale levels-kanaal
         const levelChannel = message.guild.channels.cache.get(LEVEL_CHANNEL_ID);
         if (levelChannel) {
             const levelEmbed = new EmbedBuilder()
@@ -154,11 +176,11 @@ client.on('messageCreate', async (message) => {
     if (message.content === '!stop') {
         if (activeGames[message.channel.id]) {
             delete activeGames[message.channel.id];
-            return message.reply("🛑 Het spel is stopgezet!");
+            return message.reply("🛑 Het spel is stopgezet! Er komen geen automatische vragen meer.");
         }
     }
 
-    // Antwoorden controleren & direct een nieuwe vraag starten
+    // Antwoorden controleren & DIRECT automatisch een nieuwe starten
     const channelGame = activeGames[message.channel.id];
     if (channelGame) {
         if (message.content.toLowerCase() === channelGame.answer.toLowerCase()) {
@@ -166,7 +188,7 @@ client.on('messageCreate', async (message) => {
             
             await message.reply(`🏆 Goed geraden <@${userId}>! Het antwoord was inderdaad **${channelGame.answer}**.`);
             
-            // Wacht 2 seconden en start direct de volgende ronde
+            // Na 2 seconden start de bot automatisch de volgende ronde op zonder dat je !vlag hoeft te typen
             setTimeout(() => {
                 if (gameType === 'vlag') {
                     startNewFlagGame(message.channel);
@@ -206,25 +228,3 @@ client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
 
     if (interaction.customId.startsWith('ticket_')) {
-        await interaction.deferReply({ ephemeral: true });
-
-        let ticketType = '';
-        let prefix = 'ticket';
-
-        if (interaction.customId === 'ticket_soli') { ticketType = 'Sollicitatie'; prefix = 'soli'; }
-        if (interaction.customId === 'ticket_mc') { ticketType = 'Park Hulp'; prefix = 'park'; }
-        if (interaction.customId === 'ticket_ban') { ticketType = 'Ban Appeal'; prefix = 'ban'; }
-        if (interaction.customId === 'ticket_dc') { ticketType = 'Discord Hulp'; prefix = 'dc'; }
-        if (interaction.customId === 'ticket_web') { ticketType = 'Website Hulp'; prefix = 'web'; }
-
-        try {
-            const ticketChannel = await interaction.guild.channels.create({
-                name: `${prefix}-${interaction.user.username}`,
-                type: ChannelType.GuildText,
-                parent: TICKET_CATEGORIES[interaction.customId],
-                permissionOverwrites: [
-                    { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                    { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }
-                ]
-            });
-
