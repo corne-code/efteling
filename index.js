@@ -19,11 +19,11 @@ const client = new Client({
 const TOKEN = process.env.DISCORD_TOKEN;
 
 // --- CONFIGURATIE ---
-const COUNT_CHANNEL_ID = '1517242275602759790';
+const COUNT_CHANNEL_ID = '1517242275602759790'; // <-- HIER ZET JE HET TELKANAAL ID NEER
 const WELCOME_CHANNEL_ID = '1517153163302404200';
 const LEVEL_CHANNEL_ID = '1517153163302404201'; // Pas dit ID aan voor je levels kanaal
 
-// Jouw exacte categorieën zijn hier weer gekoppeld
+// Jouw exacte categorieën
 const TICKET_CATEGORIES = {
     ticket_soli: "1526298535010766889", // werken bij de efteling
     ticket_mc: "1526298606112477504",   // atractie hulp
@@ -50,20 +50,52 @@ const eftelingQuestions = [
     { q: "In welke attractie maak je een boottocht door een oosterse wereld uit 1001 nacht?", a: "fata morgana" }
 ];
 
-// --- VLAG RADEN DATA ---
+// --- VLAG RADEN DATA (Uitgebreid met veel leukere en moeilijkere landen!) ---
 const flagGames = [
+    // Makkelijk / Leuk
     { flag: "🇳🇱", name: "nederland" },
     { flag: "🇧🇪", name: "belgie" },
     { flag: "🇩🇪", name: "duitsland" },
     { flag: "🇫🇷", name: "frankrijk" },
+    { flag: "🇬🇧", name: "engeland" },
+    { flag: "🇺🇸", name: "amerika" },
     { flag: "🇮🇹", name: "italie" },
     { flag: "🇪🇸", name: "spanje" },
+    // Gemiddeld
     { flag: "🇯🇵", name: "japan" },
     { flag: "🇨🇦", name: "canada" },
     { flag: "🇧🇷", name: "brazilie" },
-    { flag: "🇺🇸", name: "amerika" },
     { flag: "🇲🇦", name: "marokko" },
-    { flag: "🇹🇷", name: "turkije" }
+    { flag: "🇹🇷", name: "turkije" },
+    { flag: "🇦🇺", name: "australie" },
+    { flag: "🇲🇽", name: "mexico" },
+    { flag: "🇦🇷", name: "argentinie" },
+    { flag: "🇪🇬", name: "egypte" },
+    { flag: "🇿🇦", name: "zuid-afrika" },
+    { flag: "🇬🇷", name: "griekenland" },
+    { flag: "🇮🇳", name: "india" },
+    { flag: "🇵🇹", name: "portugal" },
+    { flag: "🇨🇭", name: "zwitserland" },
+    { flag: "🇸🇪", name: "zweden" },
+    { flag: "🇨🇳", name: "china" },
+    // Moeilijk / Uitdagend
+    { flag: "🇰🇷", name: "zuid-korea" },
+    { flag: "🇮🇸", name: "ijsland" },
+    { flag: "🇳🇿", name: "nieuw-zeeland" },
+    { flag: "🇺🇦", name: "oekraine" },
+    { flag: "🇸🇦", name: "saoedi-arabie" },
+    { flag: "🇯🇲", name: "jamaica" },
+    { flag: "🇰🇪", name: "kenia" },
+    { flag: "🇵🇪", name: "peru" },
+    // Extreem moeilijk (Voor de experts!)
+    { flag: "🇳🇵", name: "nepal" },
+    { flag: "🇧🇹", name: "bhutan" },
+    { flag: "🇱 اجرا", name: "sri lanka" },
+    { flag: "🇰🇬", name: "kirgizie" },
+    { flag: "🇲🇬", name: "madagaskar" },
+    { flag: "🇵🇬", name: "papoea-nieuw-guinea" },
+    { flag: "🇻🇦", name: "vaticaanstad" },
+    { flag: "🇸🇪", name: "kazachstan" }
 ];
 
 function startNewFlagGame(channel) {
@@ -79,7 +111,7 @@ function startNewEftelingGame(channel) {
 }
 
 client.once('ready', () => {
-    console.log(`🤖 Ingelogd als ${client.user.tag}! Categorieën zijn gekoppeld.`);
+    console.log(`🤖 Ingelogd als ${client.user.tag}! Bot is volledig operationeel.`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -169,7 +201,7 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// --- TICKETS VERWERKEN PER CATEGORIE ---
+// --- TICKETS VERWERKEN ---
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
 
@@ -186,35 +218,9 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.customId === 'ticket_web') { ticketType = 'Website Hulp'; prefix = 'web'; }
 
         try {
-            // De 'parent' eigenschap is nu correct teruggezet
             const ticketChannel = await interaction.guild.channels.create({
                 name: `🎫-${prefix}-${interaction.user.username}`,
                 type: ChannelType.GuildText,
-                parent: TICKET_CATEGORIES[interaction.customId], // Sorteert in de juiste map
+                parent: TICKET_CATEGORIES[interaction.customId],
                 permissionOverwrites: [
                     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                    { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }
-                ]
-            });
-
-            const embed = new EmbedBuilder()
-                .setTitle(`🏰 ${ticketType} - ${interaction.user.username}`)
-                .setDescription(`Bedankt voor je bericht. Leg je vraag zo duidelijk mogelijk uit.\n\nKlik op de knop om te sluiten.`)
-                .setColor(0x2E1F14);
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('close_ticket').setLabel('Sluit Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒')
-            );
-
-            await ticketChannel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] });
-            await interaction.editReply({ content: `✅ Je ticket is aangemaakt! Ga naar ${ticketChannel}` });
-        } catch (error) {
-            console.error(error);
-            await interaction.editReply({ content: `❌ Er ging iets mis bij het aanmaken onder de categorie. Controleer de ID's.` });
-        }
-    }
-
-    if (interaction.customId === 'close_ticket') {
-        await interaction.reply({ content: "🔒 Dit ticket wordt over 5 seconden gesloten..." });
-        setTimeout(async () => {
-
