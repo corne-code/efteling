@@ -215,3 +215,23 @@ client.on('interactionCreate', async (interaction) => {
             });
 
             const embed = new EmbedBuilder().setTitle(`🏰 ${ticketType}`).setDescription(`Leg je vraag uit. Klik op de knop om te sluiten.`).setColor(0x2E1F14);
+            const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_ticket').setLabel('Sluit Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒'));
+
+            await ticketChannel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] });
+            await interaction.editReply({ content: `✅ Ticket aangemaakt in de juiste map! Ga naar ${ticketChannel}` });
+        } catch (error) {
+            console.error(error);
+            await interaction.editReply({ content: `❌ Fout bij het aanmaken van het ticket. Controleer permissies.` });
+        }
+    }
+
+    if (interaction.customId === 'close_ticket') {
+        await interaction.reply({ content: "🔒 Dit ticket sluit over 5 seconden..." });
+        setTimeout(async () => {
+            try { await interaction.channel.delete(); } catch (e) { console.error(e); }
+        }, 5000);
+    }
+});
+
+client.login(TOKEN);
+
