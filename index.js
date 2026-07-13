@@ -18,9 +18,13 @@ const client = new Client({
 
 const TOKEN = process.env.DISCORD_TOKEN;
 
-// --- CONFIGURATIE (Pas deze ID's aan in Discord) ---
-const COUNT_CHANNEL_ID = '1517242275602759790';
-const WELCOME_CHANNEL_ID = '1517153163302404200';
+// --- CONFIGURATIE (KANALEN VAN JOUW VRIEND) ---
+const COUNT_CHANNEL_ID = '1525991728396505129';       // Tellen
+const VRAGEN_CHANNEL_ID = '1525991824139878570';      // Random vragen
+const VLAGGEN_CHANNEL_ID = '1525991882218274967';     // Vlaggen raden
+const LEVELS_CHANNEL_ID = '1525991988283834559';      // Levels status
+
+const WELCOME_CHANNEL_ID = '1517153163302404200';     // TIP: Pas deze nog aan naar zijn welkomstkanaal!
 
 const TICKET_CATEGORIES = {
     ticket_soli: "1525019961171509409",
@@ -33,8 +37,8 @@ const TICKET_CATEGORIES = {
 // --- DATA OPSLAG (In-memory) ---
 let currentCount = 0;
 let lastCounterId = null;
-const userLevels = {}; // Slaat XP en Levels op: { userId: { xp: 0, level: 1 } }
-const activeGames = {}; // Slaat lopende spelletjes per kanaal op
+const userLevels = {}; 
+const activeGames = {}; 
 
 // --- EFTELING VRAGEN DATA ---
 const eftelingQuestions = [
@@ -62,17 +66,24 @@ client.on('messageCreate', async (message) => {
     const userId = message.author.id;
     if (!userLevels[userId]) userLevels[userId] = { xp: 0, level: 1 };
     
-    userLevels[userId].xp += Math.floor(Math.random() * 10) + 5; // 5 tot 15 XP per bericht
+    userLevels[userId].xp += Math.floor(Math.random() * 10) + 5; 
     const xpNeeded = userLevels[userId].level * 100;
 
     if (userLevels[userId].xp >= xpNeeded) {
         userLevels[userId].level += 1;
         userLevels[userId].xp = 0;
-        message.reply(`🎉 **Level Up!** Je bent nu level **${userLevels[userId].level}**!`);
+        // Stuurt de level-up melding netjes in het levels kanaal
+        const lvlChannel = message.guild.channels.cache.get(LEVELS_CHANNEL_ID);
+        if (lvlChannel) {
+            lvlChannel.send(`🎉 **Level Up!** <@${userId}> is nu level **${userLevels[userId].level}**!`);
+        }
     }
 
     // --- LEVEL COMMANDO ---
     if (message.content === '!level') {
+        if (message.channel.id !== LEVELS_CHANNEL_ID) {
+            return message.reply(`❌ Dit commando werkt alleen in <#${LEVELS_CHANNEL_ID}>!`).then(msg => setTimeout(() => msg.delete(), 5000));
+        }
         const levelData = userLevels[userId];
         return message.reply(`🌟 **Je Efteling Status:**\n• Level: ${levelData.level}\n• XP: ${levelData.xp}/${levelData.level * 100}`);
     }
@@ -99,16 +110,23 @@ client.on('messageCreate', async (message) => {
         return message.react('✅');
     }
 
-    // --- MINI-GAMES: VLAG RADEN & EFTELING VRAAG ---
+    // --- MINI-GAME: VLAG RADEN ---
     if (message.content === '!vlag') {
+        if (message.channel.id !== VLAGGEN_CHANNEL_ID) {
+            return message.reply(`❌ Dit spel kan alleen gestart worden in <#${VLAGGEN_CHANNEL_ID}>!`).then(msg => setTimeout(() => msg.delete(), 5000));
+        }
         if (activeGames[message.channel.id]) return message.reply("Er is al een spel bezig in dit kanaal!");
         
         const game = flagGames[Math.floor(Math.random() * flagGames.length)];
         activeGames[message.channel.id] = { type: 'vlag', answer: game.name };
-        return message.reply(`🗺️ **Vlag Raden!** Welk land hoort bij deze vlag: ${game.flag}? (Typ je antwoord in de chat)`);
+        return message.reply(`🗺️ **Vlag Raden!** Welk land hoort bij deze vlag: ${game.flag}?`);
     }
 
+    // --- MINI-GAME: EFTELING VRAAG ---
     if (message.content === '!eftelingvraag') {
+        if (message.channel.id !== VRAGEN_CHANNEL_ID) {
+            return message.reply(`❌ Dit spel kan alleen gestart worden in <#${VRAGEN_CHANNEL_ID}>!`).then(msg => setTimeout(() => msg.delete(), 5000));
+        }
         if (activeGames[message.channel.id]) return message.reply("Er is al een spel bezig in dit kanaal!");
         
         const game = eftelingQuestions[Math.floor(Math.random() * eftelingQuestions.length)];
@@ -116,7 +134,7 @@ client.on('messageCreate', async (message) => {
         return message.reply(`🏰 **Efteling Quiz!** ${game.q}`);
     }
 
-    // Antwoorden controleren voor actieve games
+    // Antwoorden controleren voor actieve games (werkt alleen in de juiste kanalen)
     const channelGame = activeGames[message.channel.id];
     if (channelGame) {
         if (message.content.toLowerCase() === channelGame.answer.toLowerCase()) {
@@ -202,23 +220,6 @@ client.on('guildMemberAdd', async (member) => {
 
     const embed = new EmbedBuilder()
         .setColor("#2E1F14")
-        .setTitle("🕯️ Een nieuw avontuur begint in de Efteling...")
+        .setTitle("🕯️ Een nieuw avontuur begins in de Efteling...")
         .setDescription(
             `Welkom ${member}.\n\n` +
-            `De poorten van de Efteling zijn voor je geopend.\n\n` +
-            `👥 Jij bent onze **${member.guild.memberCount}e** bezoeker.\n\n` +
-            `✨ Voel je thuis en geniet van je magische avontuur.`
-        )
-        .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 1024 }))
-        .setFooter({ text: `Efteling • Welkom` })
-        .setTimestamp();
-
-    channel.send({ embeds: [embed] });
-});
-
-client.once('ready', () => {
-    console.log(`Bot is online als ${client.user.tag}!`);
-});
-
-client.login(TOKEN);
-
