@@ -19,6 +19,9 @@ module.exports = {
             }
         }
 
+        // Zoek de juiste serverconfiguratie op op basis van waar de knop is ingedrukt
+        const serverConfig = Object.values(config.servers).find(s => s.guildId === interaction.guild.id);
+
         // 2. Verwerk Ticket Knoppen (Openen)
         if (interaction.isButton()) {
             const customId = interaction.customId;
@@ -85,14 +88,17 @@ module.exports = {
 
                 await ticketChannel.send({ content: `<@${interaction.user.id}> • Support Team`, embeds: [welcomeEmbed], components: [closeRow] });
 
-                const logChannel = interaction.guild.channels.cache.get(config.channels.logs);
-                if (logChannel) {
-                    const logEmbed = new EmbedBuilder()
-                        .setTitle('🎟️ Ticket Geopend')
-                        .setDescription(`**Ticket:** <#${ticketChannel.id}>\n**Geopend door:** <@${interaction.user.id}>\n**Categorie:** ${ticketLabel}`)
-                        .setColor('#2ECC71')
-                        .setTimestamp();
-                    await logChannel.send({ embeds: [logEmbed] });
+                // Multi-server logkanaal fix
+                if (serverConfig && serverConfig.logs) {
+                    const logChannel = interaction.guild.channels.cache.get(serverConfig.logs);
+                    if (logChannel) {
+                        const logEmbed = new EmbedBuilder()
+                            .setTitle('🎟️ Ticket Geopend')
+                            .setDescription(`**Ticket:** <#${ticketChannel.id}>\n**Geopend door:** <@${interaction.user.id}>\n**Categorie:** ${ticketLabel}`)
+                            .setColor('#2ECC71')
+                            .setTimestamp();
+                        await logChannel.send({ embeds: [logEmbed] }).catch(() => {});
+                    }
                 }
 
                 await interaction.editReply({ content: `Je ticket is succesvol aangemaakt: <#${ticketChannel.id}>` });
@@ -111,18 +117,21 @@ module.exports = {
 
                 const buffer = Buffer.from(transcriptText, 'utf-8');
 
-                const logChannel = interaction.guild.channels.cache.get(config.channels.logs);
-                if (logChannel) {
-                    const logEmbed = new EmbedBuilder()
-                        .setTitle('🔒 Ticket Gesloten')
-                        .setDescription(`**Ticket:** ${interaction.channel.name}\n**Gesloten door:** <@${interaction.user.id}>`)
-                        .setColor('#E74C3C')
-                        .setTimestamp();
+                // Multi-server logkanaal fix voor sluiten
+                if (serverConfig && serverConfig.logs) {
+                    const logChannel = interaction.guild.channels.cache.get(serverConfig.logs);
+                    if (logChannel) {
+                        const logEmbed = new EmbedBuilder()
+                            .setTitle('🔒 Ticket Gesloten')
+                            .setDescription(`**Ticket:** ${interaction.channel.name}\n**Gesloten door:** <@${interaction.user.id}>`)
+                            .setColor('#E74C3C')
+                            .setTimestamp();
 
-                    await logChannel.send({ 
-                        embeds: [logEmbed], 
-                        files: [{ attachment: buffer, name: `transcript-${interaction.channel.name}.txt` }] 
-                    });
+                        await logChannel.send({ 
+                            embeds: [logEmbed], 
+                            files: [{ attachment: buffer, name: `transcript-${interaction.channel.name}.txt` }] 
+                        }).catch(() => {});
+                    }
                 }
 
                 await interaction.editReply({ content: 'Dit ticket wordt over 5 seconden gesloten en verwijderd...' });
