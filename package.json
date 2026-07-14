@@ -1,12 +1,25 @@
 {
   "name": "efteling-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Professionele Efteling Discord Bot",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
+  "keywords": [
+    "discord",
+    "efteling",
+    "bot",
+    "tickets"
+  ],
+  "author": "Jij",
+  "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "discord.js": "^14.21.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
   }
 }
-
