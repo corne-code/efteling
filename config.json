@@ -13,7 +13,22 @@
     "discordVragen": "1526249047818506250",
     "parkInfo": "1526250027897454682"
   },
-  "channels": {
-    "logs": "1525990067301126286"
+  "servers": {
+    "server_1": {
+      "guildId": "VUL_HIER_DE_ID_VAN_SERVER_1_IN",
+      "welkom": "1526555085897863310",
+      "logs": "1526610805632794805",
+      "tellen": "1526610933537833040",
+      "vlaggen": "1526610955956387922",
+      "vragenSpel": "1526610976206622762"
+    },
+    "server_2": {
+      "guildId": "VUL_HIER_DE_ID_VAN_SERVER_2_IN",
+      "welkom": "VUL_HIER_IN",
+      "logs": "VUL_HIER_IN",
+      "tellen": "VUL_HIER_IN",
+      "vlaggen": "VUL_HIER_IN",
+      "vragenSpel": "VUL_HIER_IN"
+    }
   }
 }
