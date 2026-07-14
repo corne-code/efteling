@@ -16,7 +16,8 @@ module.exports = {
             commands.push(command.data.toJSON());
         });
 
-        const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+        // GEBRUIK HIER CLIENT.TOKEN (DIT FIXT DE SCRIPT-FOUT OP RENDER)
+        const rest = new REST({ version: '10' }).setToken(client.token);
 
         try {
             console.log(`[COMMANDS] Starten met het registreren van ${commands.length} slash commands per server...`);
@@ -25,7 +26,7 @@ module.exports = {
             for (const serverKey in config.servers) {
                 const server = config.servers[serverKey];
                 
-                // Controleer of er een geldig Guild ID is ingevuld (en niet de placeholder tekst)
+                // Controleer of er een geldig Guild ID is ingevuld
                 if (server.guildId && server.guildId !== "HIER_ID_VAN_SERVER_1" && server.guildId !== "VUL_HIER_DE_ID_VAN_SERVER_2_IN") {
                     await rest.put(
                         Routes.applicationGuildCommands(client.user.id, server.guildId),
@@ -35,7 +36,7 @@ module.exports = {
                 }
             }
 
-            console.log('[COMMANDS] Registratieproces afgerond!');
+            console.log('[COMMANDS] Registratieproces succesvol afgerond!');
         } catch (error) {
             console.error('[ERROR] Fout bij het registreren van slash commands:', error);
         }
