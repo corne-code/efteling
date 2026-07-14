@@ -1,0 +1,32 @@
+[
+  {
+    "question": "In welk jaar werd de Efteling officieel geopend?",
+    "answers": ["1952", "1950", "1960", "1948"],
+    "correct": 0
+  },
+  {
+    "question": "Welke bekende sprookjesfiguur roept altijd om papier?",
+    "answers": ["Langnek", "Holle Bolle Gijs", "Klein Duimpje", "Roodkapje"],
+    "correct": 1
+  },
+  {
+    "question": "Hoe heet de houten achtbaan in de Efteling?",
+    "answers": ["Baron 1898", "Vogel Rok", "Joris en de Draak", "Python"],
+    "correct": 2
+  },
+  {
+    "question": "Wat is de hoofdstad van Frankrijk?",
+    "answers": ["Berlijn", "Londen", "Madrid", "Parijs"],
+    "correct": 3
+  },
+  {
+    "question": "Hoeveel planeten zitten er in ons zonnestelsel?",
+    "answers": ["7", "8", "9", "10"],
+    "correct": 1
+  },
+  {
+    "question": "Wie ontwierp het overgrote deel van het klassieke Sprookjesbos?",
+    "answers": ["Anton Pieck", "Ton van de Ven", "Pieke Wieke", "Walt Disney"],
+    "correct": 0
+  }
+]
